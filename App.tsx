@@ -30,8 +30,8 @@ declare global {
     openSelectKey: () => Promise<void>;
   }
   interface Window {
-    // FIX: Added readonly modifier to ensure identical modifiers across all declarations of Window.
-    readonly aistudio: AIStudio;
+    // MODIFIED: Removed readonly to match other declarations of aistudio on the global Window object.
+    aistudio: AIStudio;
   }
 }
 
@@ -195,7 +195,7 @@ const App: React.FC = () => {
           <Sparkles size={40} className="text-white" />
         </div>
         <h1 className="text-3xl font-black mb-4 tracking-tighter">FamilyLinkへ<br/>ようこそ</h1>
-        <p className="text-indigo-100 text-sm mb-12 font-medium leading-relaxed">
+        <p className="text-indigo-100 text-sm mb-12 font-medium liberalism-relaxed">
           AIアシスタント機能（タスク分解など）を利用するために、Gemini APIキーの設定が必要です。
         </p>
         <div className="w-full space-y-4">

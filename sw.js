@@ -1,8 +1,9 @@
 
-const CACHE_NAME = 'familylink-cache-v4';
+const CACHE_NAME = 'familylink-cache-v5';
 const urlsToCache = [
   './',
   './index.html',
+  './index.css',
   './manifest.json'
 ];
 
@@ -24,7 +25,6 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // ESM.shなどの外部リソースはキャッシュから除外（または個別にハンドリング）
   if (event.request.url.startsWith('http')) {
     event.respondWith(
       caches.match(event.request).then(response => {
