@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   CheckCircle2, 
@@ -25,14 +24,14 @@ import { db, syncToCloud, removeFromCloud, requestNotificationPermission } from 
 import { collection, onSnapshot, query, where, doc, setDoc } from 'firebase/firestore';
 
 // aistudio オブジェクトの型定義
-// FIX: Removed readonly modifier from aistudio to ensure identical modifiers across all declarations of Window
 declare global {
   interface AIStudio {
     hasSelectedApiKey: () => Promise<boolean>;
     openSelectKey: () => Promise<void>;
   }
   interface Window {
-    aistudio: AIStudio;
+    // FIX: Added readonly modifier to ensure identical modifiers across all declarations of Window.
+    readonly aistudio: AIStudio;
   }
 }
 

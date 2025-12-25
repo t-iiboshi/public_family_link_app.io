@@ -1,14 +1,13 @@
 
-// PWA Service Worker with Push Notification Support
-const CACHE_NAME = 'familylink-cache-v3';
+const CACHE_NAME = 'familylink-cache-v4';
 const urlsToCache = [
   './',
   './index.html',
-  './manifest.json',
-  'https://cdn.tailwindcss.com'
+  './manifest.json'
 ];
 
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
   );
@@ -24,41 +23,13 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Handle push notification when app is in background
-self.addEventListener('push', event => {
-  const data = event.data ? event.data.json() : { title: 'FamilyLink', body: 'リマインダー通知があります。' };
-  
-  const options = {
-    body: data.body,
-    icon: 'https://cdn-icons-png.flaticon.com/512/2634/2634481.png',
-    badge: 'https://cdn-icons-png.flaticon.com/512/2634/2634481.png',
-    vibrate: [200, 100, 200],
-    data: { url: './' }
-  };
-
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
-});
-
-// Open app when notification is clicked
-self.addEventListener('notificationclick', event => {
-  event.notification.close();
-  event.waitUntil(
-    clients.matchAll({ type: 'window' }).then(clientList => {
-      for (const client of clientList) {
-        // 相対パスのURLチェック
-        if (client.url.includes(self.location.origin) && 'focus' in client) return client.focus();
-      }
-      if (clients.openWindow) return clients.openWindow('./');
-    })
-  );
-});
-
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
-  );
+  // ESM.shなどの外部リソースはキャッシュから除外（または個別にハンドリング）
+  if (event.request.url.startsWith('http')) {
+    event.respondWith(
+      caches.match(event.request).then(response => {
+        return response || fetch(event.request);
+      })
+    );
+  }
 });
