@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   CheckCircle2, 
@@ -15,23 +16,23 @@ import {
   ShieldCheck,
   ArrowRight
 } from 'lucide-react';
-import { Task, Memo, Transaction, AppMode } from './types';
-import TodoSection from './components/TodoSection';
-import MemoSection from './components/MemoSection';
-import FinanceSection from './components/FinanceSection';
-import Dashboard from './components/Dashboard';
-import { db, syncToCloud, removeFromCloud, requestNotificationPermission } from './firebase';
+import { Task, Memo, Transaction, AppMode } from './types.ts';
+import TodoSection from './components/TodoSection.tsx';
+import MemoSection from './components/MemoSection.tsx';
+import FinanceSection from './components/FinanceSection.tsx';
+import Dashboard from './components/Dashboard.tsx';
+import { db, syncToCloud, removeFromCloud, requestNotificationPermission } from './firebase.ts';
 import { collection, onSnapshot, query, where, doc, setDoc } from 'firebase/firestore';
 
 // aistudio オブジェクトの型定義
+// すべての宣言で同じ修飾子（readonlyなど）を持つように修正
 declare global {
   interface AIStudio {
-    hasSelectedApiKey: () => Promise<boolean>;
-    openSelectKey: () => Promise<void>;
+    hasSelectedApiKey(): Promise<boolean>;
+    openSelectKey(): Promise<void>;
   }
   interface Window {
-    // MODIFIED: Removed readonly to match other declarations of aistudio on the global Window object.
-    aistudio: AIStudio;
+    readonly aistudio: AIStudio;
   }
 }
 
@@ -60,7 +61,6 @@ const App: React.FC = () => {
         const selected = await window.aistudio.hasSelectedApiKey();
         setHasApiKey(selected);
       } else {
-        // aistudio環境外（ローカル等）ではtrueとして扱う
         setHasApiKey(true);
       }
     };
@@ -70,7 +70,7 @@ const App: React.FC = () => {
   const handleOpenKeySelector = async () => {
     if (window.aistudio) {
       await window.aistudio.openSelectKey();
-      // レースコンディション対策として、呼び出し後は成功したものとして進む
+      // キー選択ダイアログを表示した後は、成功したとみなしてアプリを進行させる
       setHasApiKey(true);
     }
   };
@@ -195,7 +195,7 @@ const App: React.FC = () => {
           <Sparkles size={40} className="text-white" />
         </div>
         <h1 className="text-3xl font-black mb-4 tracking-tighter">FamilyLinkへ<br/>ようこそ</h1>
-        <p className="text-indigo-100 text-sm mb-12 font-medium liberalism-relaxed">
+        <p className="text-indigo-100 text-sm mb-12 font-medium leading-relaxed">
           AIアシスタント機能（タスク分解など）を利用するために、Gemini APIキーの設定が必要です。
         </p>
         <div className="w-full space-y-4">

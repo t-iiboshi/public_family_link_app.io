@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { ChevronRight, FileText, CheckCircle2, User, Users, Copy, Settings2, ArrowRight } from 'lucide-react';
-import { Task, Memo, AppMode } from '../types';
+import { Task, Memo, AppMode } from '../types.ts';
 
 interface DashboardProps {
   familyId: string;
@@ -54,7 +54,6 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-10">
-      {/* Family Connection Settings */}
       <section className="bg-slate-900 text-white rounded-3xl p-6 shadow-xl overflow-hidden relative">
         <div className="absolute top-0 right-0 p-4 opacity-10">
           <Users size={80} />

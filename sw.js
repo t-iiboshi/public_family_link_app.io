@@ -1,7 +1,7 @@
 
-const CACHE_NAME = 'familylink-cache-v5';
+const CACHE_NAME = 'familylink-cache-v6';
 const urlsToCache = [
-  './',
+  '/',
   './index.html',
   './index.css',
   './manifest.json'
