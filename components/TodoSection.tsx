@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Bell, Clock, RefreshCw, CheckCircle2, Repeat, Pencil, X, Sparkles, Loader2 } from 'lucide-react';
 import { Task, RecurrenceType } from '../types';
-import { ai } from '../firebase';
+import { GoogleGenAI } from "@google/genai";
 
 interface TodoSectionProps {
   tasks: Task[];
@@ -82,10 +82,14 @@ const TodoSection: React.FC<TodoSectionProps> = ({ tasks, onUpdate, onDelete, is
     if (!newTitle.trim()) return;
     setIsAiLoading(true);
     try {
+      // Create a new GoogleGenAI instance right before making an API call to ensure it always uses the most up-to-date API key from the dialog.
+      // FIX: Use process.env.API_KEY directly as per guidelines
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `タスク「${newTitle}」を家族で分担できるように、具体的で短い3〜5個のサブタスクに分解して、日本語で箇条書きで出力してください。余計な説明は不要です。`,
       });
+      // FIX: response.text is a getter, not a method
       const text = response.text || "";
       const suggestedTasks = text.split('\n').map(s => s.replace(/^[・\-\d\.\s]+/, '').trim()).filter(s => s.length > 0);
       
@@ -94,9 +98,13 @@ const TodoSection: React.FC<TodoSectionProps> = ({ tasks, onUpdate, onDelete, is
       });
       setNewTitle('');
       setIsAdding(false);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert('AIアシスタントに接続できませんでした。');
+      if (e.message?.includes("Requested entity was not found")) {
+        alert('APIキーが無効、または期限切れです。設定し直してください。');
+      } else {
+        alert('AIアシスタントに接続できませんでした。');
+      }
     } finally {
       setIsAiLoading(false);
     }

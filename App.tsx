@@ -12,22 +12,36 @@ import {
   CloudOff,
   Bell,
   BellOff,
-  Sparkles
+  Sparkles,
+  ShieldCheck,
+  ArrowRight
 } from 'lucide-react';
 import { Task, Memo, Transaction, AppMode } from './types';
 import TodoSection from './components/TodoSection';
 import MemoSection from './components/MemoSection';
 import FinanceSection from './components/FinanceSection';
 import Dashboard from './components/Dashboard';
-import { db, syncToCloud, removeFromCloud, requestNotificationPermission, ai } from './firebase';
+import { db, syncToCloud, removeFromCloud, requestNotificationPermission } from './firebase';
 import { collection, onSnapshot, query, where, doc, setDoc } from 'firebase/firestore';
+
+// aistudio オブジェクトの型定義
+// FIX: modifiers and type naming to avoid conflict with existing global declarations
+declare global {
+  interface AIStudio {
+    hasSelectedApiKey: () => Promise<boolean>;
+    openSelectKey: () => Promise<void>;
+  }
+  interface Window {
+    readonly aistudio: AIStudio;
+  }
+}
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'home' | 'tasks' | 'memos' | 'finance'>('home');
   const [mode, setMode] = useState<AppMode>('personal');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [notificationEnabled, setNotificationEnabled] = useState(Notification.permission === 'granted');
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
   
   const [familyId, setFamilyId] = useState<string>(() => {
     const saved = localStorage.getItem('familylink_family_id');
@@ -42,6 +56,27 @@ const App: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>(() => JSON.parse(localStorage.getItem('familylink_transactions') || '[]'));
 
   useEffect(() => {
+    const checkKey = async () => {
+      if (window.aistudio) {
+        const selected = await window.aistudio.hasSelectedApiKey();
+        setHasApiKey(selected);
+      } else {
+        // aistudio環境外（ローカル等）ではtrueとして扱う
+        setHasApiKey(true);
+      }
+    };
+    checkKey();
+  }, []);
+
+  const handleOpenKeySelector = async () => {
+    if (window.aistudio) {
+      await window.aistudio.openSelectKey();
+      // レースコンディション対策として、呼び出し後は成功したものとして進む
+      setHasApiKey(true);
+    }
+  };
+
+  useEffect(() => {
     const handleStatus = () => setIsOnline(navigator.onLine);
     window.addEventListener('online', handleStatus);
     window.addEventListener('offline', handleStatus);
@@ -51,7 +86,6 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // Firestoreからのリアルタイム受信
   useEffect(() => {
     if (!db || !familyId) return;
 
@@ -65,7 +99,6 @@ const App: React.FC = () => {
           if (index > -1) combined[index] = ct;
           else combined.push(ct);
         });
-        // クラウドにない共有アイテムを削除（他人が消したケース）
         return combined.filter(t => !t.isShared || cloudTasks.some(ct => ct.id === t.id));
       });
     });
@@ -87,7 +120,6 @@ const App: React.FC = () => {
     return () => { unsubTasks(); unsubMemos(); };
   }, [familyId]);
 
-  // ローカル保存
   useEffect(() => {
     localStorage.setItem('familylink_tasks', JSON.stringify(tasks));
   }, [tasks]);
@@ -96,7 +128,6 @@ const App: React.FC = () => {
     localStorage.setItem('familylink_memos', JSON.stringify(memos));
   }, [memos]);
 
-  // クラウド削除を伴うタスク削除
   const handleDeleteTask = useCallback(async (id: string, isShared: boolean) => {
     setTasks(prev => prev.filter(t => t.id !== id));
     if (isShared && isOnline) {
@@ -104,11 +135,9 @@ const App: React.FC = () => {
     }
   }, [isOnline]);
 
-  // クラウド同期を伴うタスク更新
   const handleUpdateTasks = useCallback(async (newTasksOrFn: any) => {
     setTasks(prev => {
       const next = typeof newTasksOrFn === 'function' ? newTasksOrFn(prev) : newTasksOrFn;
-      // 変更があった共有タスクを同期
       if (isOnline && familyId) {
         const sharedChanged = next.filter((t: Task) => t.isShared);
         sharedChanged.forEach((t: Task) => syncToCloud('tasks', t, familyId));
@@ -158,6 +187,37 @@ const App: React.FC = () => {
     }
   };
 
+  if (hasApiKey === null) return <div className="h-screen bg-slate-50" />;
+
+  if (!hasApiKey) {
+    return (
+      <div className="flex flex-col h-screen max-w-md mx-auto bg-indigo-600 text-white px-8 justify-center items-center text-center animate-in fade-in duration-500">
+        <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mb-8 backdrop-blur-xl">
+          <Sparkles size={40} className="text-white" />
+        </div>
+        <h1 className="text-3xl font-black mb-4 tracking-tighter">FamilyLinkへ<br/>ようこそ</h1>
+        <p className="text-indigo-100 text-sm mb-12 font-medium leading-relaxed">
+          AIアシスタント機能（タスク分解など）を利用するために、Gemini APIキーの設定が必要です。
+        </p>
+        <div className="w-full space-y-4">
+          <button 
+            onClick={handleOpenKeySelector}
+            className="w-full bg-white text-indigo-600 font-black py-4 rounded-2xl shadow-xl flex items-center justify-center gap-2 hover:bg-indigo-50 active:scale-95 transition-all"
+          >
+            利用を開始する <ArrowRight size={18} />
+          </button>
+          <a 
+            href="https://ai.google.dev/gemini-api/docs/billing" 
+            target="_blank" 
+            className="block text-[10px] text-indigo-200 font-bold hover:text-white transition-colors"
+          >
+            APIキーと課金設定についてのドキュメント
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   const todayStr = new Date().toLocaleDateString('ja-JP', { weekday: 'short', month: 'short', day: 'numeric' });
 
   return (
@@ -205,9 +265,9 @@ const App: React.FC = () => {
             <p className="text-base font-black leading-none">{familyId}</p>
           </div>
           <div className="flex-shrink-0 bg-white/10 rounded-xl p-2 min-w-[95px] border border-white/10 backdrop-blur-md">
-            <p className="text-[8px] opacity-60 font-bold uppercase tracking-widest mb-1">同期状況</p>
+            <p className="text-[8px] opacity-60 font-bold uppercase tracking-widest mb-1">AI設定</p>
             <p className="text-base font-black leading-none flex items-center gap-1">
-              {isOnline ? 'Online' : 'Offline'}
+              <ShieldCheck size={14} className="text-emerald-400" /> OK
             </p>
           </div>
         </div>

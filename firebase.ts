@@ -2,7 +2,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import { GoogleGenAI } from "@google/genai";
 
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
@@ -18,9 +17,6 @@ const isConfigured = firebaseConfig.apiKey !== "YOUR_API_KEY";
 const app = isConfigured ? initializeApp(firebaseConfig) : null;
 export const db = app ? getFirestore(app) : null;
 export const messaging = app ? getMessaging(app) : null;
-
-// Gemini AI の初期化 (API_KEYは環境変数から取得)
-export const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
 
 export const requestNotificationPermission = async () => {
   if (!messaging) return null;
