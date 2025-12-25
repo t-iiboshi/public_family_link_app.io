@@ -1,6 +1,6 @@
 
 // PWA Service Worker with Push Notification Support
-const CACHE_NAME = 'familylink-cache-v2';
+const CACHE_NAME = 'familylink-cache-v3';
 const urlsToCache = [
   './',
   './index.html',
@@ -47,9 +47,10 @@ self.addEventListener('notificationclick', event => {
   event.waitUntil(
     clients.matchAll({ type: 'window' }).then(clientList => {
       for (const client of clientList) {
-        if (client.url === '/' && 'focus' in client) return client.focus();
+        // 相対パスのURLチェック
+        if (client.url.includes(self.location.origin) && 'focus' in client) return client.focus();
       }
-      if (clients.openWindow) return clients.openWindow('/');
+      if (clients.openWindow) return clients.openWindow('./');
     })
   );
 });

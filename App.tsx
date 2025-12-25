@@ -25,14 +25,14 @@ import { db, syncToCloud, removeFromCloud, requestNotificationPermission } from 
 import { collection, onSnapshot, query, where, doc, setDoc } from 'firebase/firestore';
 
 // aistudio オブジェクトの型定義
-// FIX: modifiers and type naming to avoid conflict with existing global declarations
+// FIX: Removed readonly modifier from aistudio to ensure identical modifiers across all declarations of Window
 declare global {
   interface AIStudio {
     hasSelectedApiKey: () => Promise<boolean>;
     openSelectKey: () => Promise<void>;
   }
   interface Window {
-    readonly aistudio: AIStudio;
+    aistudio: AIStudio;
   }
 }
 
